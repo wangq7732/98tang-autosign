@@ -18,6 +18,9 @@ try:
         NoSuchElementException,
         WebDriverException,
     )
+    # 新增导入：用于管理ChromeDriver服务
+    from selenium.webdriver.chrome.service import Service
+    from webdriver_manager.chrome import ChromeDriverManager
 
     # 修复undetected_chromedriver的__del__方法以防止句柄错误
     def safe_del(self):
@@ -46,10 +49,12 @@ except ImportError:
             NoSuchElementException,
             WebDriverException,
         )
+        # 新增导入：用于管理ChromeDriver服务
+        from webdriver_manager.chrome import ChromeDriverManager
 
         UNDETECTED_AVAILABLE = False
     except ImportError:
-        raise ImportError("请安装selenium: pip install selenium")
+        raise ImportError("请安装selenium和webdriver-manager: pip install selenium webdriver-manager")
 
 
 class SafeChrome:
@@ -213,12 +218,16 @@ class BrowserDriverManager:
             options.add_experimental_option("prefs", prefs)
             self.logger.debug("配置浏览器偏好设置: 弹出窗口允许、中文字体支持")
 
-            # 创建驱动
+            # 创建驱动 - 关键修改点
             self.logger.debug("开始初始化浏览器实例")
             if UNDETECTED_AVAILABLE:
-                raw_driver = uc.Chrome(options=options)
+                # 使用webdriver-manager获取匹配版本的ChromeDriver
+                service = Service(ChromeDriverManager().install())
+                raw_driver = uc.Chrome(options=options, service=service)
             else:
-                raw_driver = webdriver.Chrome(options=options)
+                # 使用webdriver-manager获取匹配版本的ChromeDriver
+                service = Service(ChromeDriverManager().install())
+                raw_driver = webdriver.Chrome(options=options, service=service)
 
             # 使用安全包装器
             self.driver = SafeChrome(raw_driver)
